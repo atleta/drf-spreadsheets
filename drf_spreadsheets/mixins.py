@@ -94,7 +94,7 @@ class SpreadsheetMixIn:
 
         if self.filename is not None:
             filename = self.filename
-        elif self.model is not None:
+        elif getattr(self, 'model', None) is not None:
             filename = f"{self.model.__name__} Report"
         else:
             filename = f"{self.get_view_name()} Report"
