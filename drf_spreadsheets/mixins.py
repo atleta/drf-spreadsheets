@@ -36,6 +36,8 @@ class SpreadsheetMixIn:
     # default 'full_name'. If this field is set to None (default value), all fields will be used in alphabetical order.
     spreadsheet_headers = None
 
+    supported_formats = ("xlsx", "csv")
+
     def __init__(self, *args, **kwargs):
         if not kwargs["detail"] or self.enable_spreadsheets_on_details:
             classes = []
@@ -77,19 +79,24 @@ class SpreadsheetMixIn:
         )
 
         if isinstance(response.accepted_renderer, SpreadsheetRenderer):
-            # Resolve filename, either from override, model, or view name
-            if self.filename is not None:
-                filename = self.filename
-            elif self.model is not None:
-                filename = f"{self.model.__name__} Report"
-            else:
-                filename = f"{self.get_view_name()} Report"
+            filename = self.get_filename(request, response, *args, **kwargs)
 
-            # Only add Content-Disposition if the renderer is XLSX or CSV
-            if response.accepted_renderer.format == "xlsx":
-                response[
-                    "Content-Disposition"
-                ] = f"attachment; filename={filename}.xlsx"
-            elif response.accepted_renderer.format == "csv":
-                response["Content-Disposition"] = f"attachment; filename={filename}.csv"
+            # Only add Content-Disposition if the renderer is one of the supported formats (XLSX or CSV)
+            if response.accepted_renderer.format in self.supported_formats:
+                response["Content-Dispotision"] = f"attachment; filename={filename}.{response.accepted_renderer.format}"
+
         return response
+
+    def get_filename(self, request, response, *args, **kwargs):
+        """
+        Return the filename, without extension. Use the filename property if not None or else the model or view name.
+        """
+
+        if self.filename is not None:
+            filename = self.filename
+        elif self.model is not None:
+            filename = f"{self.model.__name__} Report"
+        else:
+            filename = f"{self.get_view_name()} Report"
+
+        return filename
